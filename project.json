@@ -1,0 +1,9 @@
+{
+  "name": "lambda-logger",
+  "description": "Collect logs from AWS lambda functions and send them to other (nicer) logging services Edit",
+  "memory": 128,
+  "timeout": 30,
+  "runtime": "golang",
+  "role": "arn:aws:iam::032352966958:role/lambda-logger_lambda_function",
+  "environment": {}
+}

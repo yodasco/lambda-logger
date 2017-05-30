@@ -1,0 +1,10 @@
+package: github.com/yodasco/lambda-logger
+import:
+- package: cloud.google.com/go
+  version: 7eaaec940b71769743a0d2848381a596475db704
+  subpackages:
+  - logging
+- package: github.com/apex/go-apex
+- package: golang.org/x/net
+  subpackages:
+  - context
