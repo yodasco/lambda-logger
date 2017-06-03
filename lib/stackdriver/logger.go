@@ -1,17 +1,75 @@
 package stackdriver
 
 import (
+	"fmt"
 	"log"
+
+	"github.com/yodasco/lambda-logger/lib/types"
 
 	"cloud.google.com/go/logging"
 	"golang.org/x/net/context"
 )
 
-func Log() {
-	ctx := context.Background()
+const (
+	// TODO: Read that from ENV.
+	projectID = "yodas-test"
+)
 
-	// Sets your Google Cloud Platform project ID.
-	projectID := "yodas-test"
+// LogEvents logs the events to stackdriver
+func LogEvents(events types.CloudwatchLogEvents) error {
+	client := mustCreateClient()
+	defer closeClient(client)
+	logger := client.Logger(events.LogGroup)
+	for _, event := range events.LogEvents {
+		logger.Log(logging.Entry{
+			Payload:   event.Message,
+			Severity:  severityFromLogLevel(event.Level),
+			Timestamp: event.Timestamp,
+			InsertID:  fmt.Sprintf("cloudwatch-%s", event.ID),
+			Labels:    appendMap(event.Labels, "logStream", events.LogStream),
+		})
+	}
+	log.Printf("Logged %d lines from %s\n", len(events.LogEvents), events.LogGroup)
+	return nil
+}
+
+// appends to the map the list of key-values.
+// Key-values must be an even numner of arguments representing string
+// key-values
+func appendMap(m map[string]string, keyValues ...string) map[string]string {
+	if m == nil {
+		m = make(map[string]string)
+	}
+	if len(keyValues)%2 != 0 {
+		log.Fatal("There should be an even number of keyValues to append")
+	}
+	for i := 0; i < len(keyValues)/2; i++ {
+		k := keyValues[i*2]
+		v := keyValues[i*2+1]
+		m[k] = v
+	}
+	return m
+}
+
+func severityFromLogLevel(level string) logging.Severity {
+	switch level {
+	case "debug":
+		return logging.Debug
+	case "info":
+		return logging.Info
+	case "warn", "warning":
+		return logging.Warning
+	case "error":
+		return logging.Error
+	case "fatal":
+		return logging.Critical
+	default:
+		return logging.Default
+	}
+}
+func mustCreateClient() *logging.Client {
+	var err error
+	ctx := context.Background()
 
 	// Creates a client.
 	client, err := logging.NewClient(ctx, projectID)
@@ -19,23 +77,15 @@ func Log() {
 		log.Fatalf("Failed to create client: %v", err)
 	}
 
-	// Sets the name of the log to write to.
-	logName := "my-log"
-
-	// Selects the log to write to.
-	logger := client.Logger(logName)
-
-	// Sets the data to log.
-	text := "Hello, world!"
-
-	// Adds an entry to the log buffer.
-	logger.Log(logging.Entry{Payload: text})
-
-	// Closes the client and flushes the buffer to the Stackdriver Logging
-	// service.
-	if err := client.Close(); err != nil {
-		log.Fatalf("Failed to close client: %v", err)
+	// Log errors to stderr so that at least we know about it...
+	client.OnError = func(e error) {
+		log.Printf("Error sending to stackdriver: %v\n", e)
 	}
+	return client
+}
 
-	log.Printf("Logged: %v\n", text)
+func closeClient(client *logging.Client) {
+	if err := client.Close(); err != nil {
+		log.Printf("Error closing client: %v", err)
+	}
 }
