@@ -3,6 +3,7 @@ package stackdriver
 import (
 	"fmt"
 	"log"
+	"os"
 
 	"github.com/yodasco/lambda-logger/lib/types"
 
@@ -10,10 +11,16 @@ import (
 	"golang.org/x/net/context"
 )
 
-const (
-	// TODO: Read that from ENV.
-	projectID = "yodas-test"
+var (
+	projectID string
 )
+
+func init() {
+	projectID = os.Getenv("GOOGLE_PROJECT_ID")
+	if projectID == "" {
+		log.Fatal("Missing required ENV variable GOOGLE_PROJECT_ID")
+	}
+}
 
 // LogEvents logs the events to stackdriver
 func LogEvents(events types.CloudwatchLogEvents) error {
