@@ -28,12 +28,15 @@ func LogEvents(events types.CloudwatchLogEvents) error {
 	defer closeClient(client)
 	logger := client.Logger(events.LogGroup)
 	for _, event := range events.LogEvents {
+		labels := appendMap(event.Labels,
+			"logStream", events.LogStream,
+			"logGroup", events.LogGroup)
 		logger.Log(logging.Entry{
 			Payload:   event.Message,
 			Severity:  severityFromLogLevel(event.Level),
 			Timestamp: event.Timestamp,
 			InsertID:  fmt.Sprintf("cloudwatch-%s", event.ID),
-			Labels:    appendMap(event.Labels, "logStream", events.LogStream),
+			Labels:    labels,
 		})
 	}
 	log.Printf("Logged %d lines from %s\n", len(events.LogEvents), events.LogGroup)
