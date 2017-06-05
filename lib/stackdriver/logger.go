@@ -1,7 +1,9 @@
 package stackdriver
 
 import (
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"os"
 
@@ -16,10 +18,11 @@ var (
 )
 
 func init() {
-	projectID = os.Getenv("GOOGLE_PROJECT_ID")
-	if projectID == "" {
-		log.Fatal("Missing required ENV variable GOOGLE_PROJECT_ID")
+	credentialsFile := os.Getenv("GOOGLE_APPLICATION_CREDENTIALS")
+	if credentialsFile == "" {
+		log.Fatal("Missing required ENV variable GOOGLE_APPLICATION_CREDENTIALS")
 	}
+	projectID = readProjectID(credentialsFile)
 }
 
 // LogEvents logs the events to stackdriver
@@ -98,4 +101,23 @@ func closeClient(client *logging.Client) {
 	if err := client.Close(); err != nil {
 		log.Printf("Error closing client: %v", err)
 	}
+}
+
+// We only care about the project ID here so don't bother parsing all the file
+type credentialsPartial struct {
+	ProjectID string `json:"project_id"`
+}
+
+func readProjectID(credentialsFile string) string {
+	file, e := ioutil.ReadFile(credentialsFile)
+	if e != nil {
+		log.Fatalf("File error: %v\n", e)
+	}
+
+	var cred credentialsPartial
+	e = json.Unmarshal(file, &cred)
+	if e != nil {
+		log.Fatalf("Error unmarshaling file %s: %v\n", credentialsFile, e)
+	}
+	return cred.ProjectID
 }
