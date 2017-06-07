@@ -98,7 +98,7 @@ That's how it should look when you're all done:
 That's it, now you should start seeing logs in stackdriver!
 
 # Costs
-Note about costs and charges:
-AWS Lambda has costs, as well as outgoing network traffic from AWS, incoming network traffic to GCP and stackdriver logging service costs.
-For us at Yodas these costs are sill negligible, but you should consider them.
+Note about costs and charges:  
+AWS Lambda costs for each activation (it's not much, but >0), as well as outgoing network traffic from AWS, incoming network traffic to GCP and stackdriver logging service costs.  
+For us at Yodas these costs are still negligible, but you should consider them.
 
